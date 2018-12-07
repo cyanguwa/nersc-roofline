@@ -1,0 +1,241 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import sys
+import os
+import matplotlib.patches as mpatches
+font = { 'size'   : 20}
+plt.rc('font', **font)
+
+filename = 'plot_' + sys.argv[0].split('.')[0]+'_'+sys.argv[0].split('.')[1]
+scalingFactorForRoofs = 1
+
+smemroofs = [828.758]
+#scomproofs = [7068.86, 3535.79, 496.56, 6894.67, 6894.07]
+scomproofs = [7068.86, 3916.8, 3535.79, 907.83, 496.56]
+smem_roof_name = ['HBM']
+#scomp_roof_name = ['FMA', 'No-FMA', 'Div FMA', 'Stride 2', 'Stride 4']
+scomp_roof_name = ['FMA', 'Theoretical No-FMA', 'No-FMA', 'Div FMA', 'Div No-FMA']
+
+markersize = 16
+AI = [2.56093839, 6.886339694, 13.08969355]
+#2.617747138, 7.05058853, 13.43561014]
+FLOPS_fma = [2081.968458, 4462.053176, 4676.292501]
+FLOPS_nofma = [1989.062233, 3413.451344, 3534.341827]
+#2.638540139, 7.074264437, 13.41748724]
+#2132.722222, 4764.353846, 5163.614035]
+#2056.553571, 3871.0375, 3898.357616]
+AI_mul = [ 1.991922505, 5.179047434, 9.675093464]
+FLOPS_fma_mul = [1629.597558, 4111.616789, 4587.398269]
+FLOPS_nofma_mul = [1563.40297, 3057.000291, 3174.788941]
+#2.123909332, 5.488899887, 9.73279796]
+#FLOPS_fma_mul = [1722.653846, 4313.055556, 5059.244186]
+#FLOPS_nofma_mul = [1722.653846, 3583.153846, 3537.357724]
+#labels = ['Div, FMA, iw=1','Div, FMA, iw=3','Div, FMA, iw=6', 'Div, No FMA, iw=1','Div, No FMA, iw=3','Div, No FMA, iw=6']
+#labels_mul = ['Mul, FMA, iw=1','Mul, FMA, iw=3','Mul, FMA, iw=6', 'Mul, No FMA, iw=1','Mul, No FMA, iw=3','Mul, No FMA, iw=6']
+#labels = ['Empirical, FMA, nw=1','Empirical, FMA, nw=3','Empirical, FMA, nw=6', 'Empirical, No FMA, nw=1','Empirical, No FMA, nw=3','Empirical, No FMA, nw=6']
+#labels_mul = ['Canonical, FMA, nw=1','Canonical, FMA, nw=3','Canonical, FMA, nw=6', 'Canonical, No FMA, nw=1','Canonical, No FMA, nw=3','Canonical, No FMA, nw=6']
+#labels = ['Empirical Performance, FMA','Empirical Performance, FMA','Empirical Performance, FMA', 'Empirical Performance, No FMA','Empirical Performance, No FMA','Empirical Performance, No FMA']
+#labels_mul = ['Canonical Performance, FMA','Canonical Performance, FMA','Canonical Performance, FMA', 'Canonical Performance, No FMA','Canonical Performance, No FMA','Canonical Performance, No FMA']
+
+#labels = ['Empirical FMA Performance','Empirical FMA Performance','Empirical FMA Performance','Empirical non-FMA Performance','Empirical non-FMA Performance','Empirical non-FMA Performance',]
+#labels_mul = ['Canonical FMA Performance','Canonical FMA Performance','Canonical FMA Performance','Canonical non-FMA Performance','Canonical non-FMA Performance','Canonical non-FMA Performance',]
+#labels = ['FMA', 'FMA', 'FMA', 'non-FMA', 'non-FMA', 'non-FMA']
+#labels_mul = ['FMA', 'FMA', 'FMA', 'non-FMA', 'non-FMA', 'non-FMA']
+labels = ['FMA', 'FMA', 'FMA', 'No FMA', 'No FMA', 'No FMA']
+labels_mul = ['FMA', 'FMA', 'FMA', 'No FMA', 'No FMA', 'No FMA']
+
+#colors = ['r','g','b','y','m','b']
+colors = ['r','g','b','y','m','r']
+#colors = ['b','y','g','r',]
+styles = ['o','s','v','^','D',"<",">","*","h","H","+","1","2","3","4","8","p","d","|","_",".",","]
+
+fig = plt.figure(1,figsize=(10.67,6.6))
+plt.clf()
+ax = fig.gca()
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.set_xlabel('Arithmetic Intensity [FLOPs/Byte]')
+ax.set_ylabel('Performance [GFLOP/sec]')
+#ax.set_title('GPU Performance: Original vs When Divides are Replaced with Multiples')
+
+nx = 10000
+xmin = -0
+xmax = 3.6
+ymin = 100.0 / scalingFactorForRoofs
+ymax = 11000/scalingFactorForRoofs
+
+ax.set_xlim(10**xmin, 10**xmax)
+ax.set_ylim(ymin, ymax)
+
+ixx = int(nx*0.02)
+xlim = ax.get_xlim()
+ylim = ax.get_ylim()
+
+scomp_x_elbow = [] 
+scomp_ix_elbow = [] 
+smem_x_elbow = [] 
+smem_ix_elbow = [] 
+
+x = np.logspace(xmin,xmax,nx)
+for roof in scomproofs:
+    for ix in range(1,nx):
+        if smemroofs[0] * x[ix] >= roof and smemroofs[0] * x[ix-1] < roof:
+            scomp_x_elbow.append(x[ix-1])
+            scomp_ix_elbow.append(ix-1)
+            break
+    if len(scomp_x_elbow) < (scomproofs.index(roof)+1):
+        scomp_x_elbow.append(xmin)
+        scomp_ix_elbow.append(0)
+
+
+for roof in smemroofs:
+    for ix in range(1,nx):
+        if (scomproofs[0] <= roof * x[ix] and scomproofs[0] > roof * x[ix-1]):
+            smem_x_elbow.append(x[ix-1])
+            smem_ix_elbow.append(ix-1)
+            break        
+
+for i in range(0,len(scomproofs)):
+    roof = scomproofs[i]
+    y = np.ones(len(x)) * roof / scalingFactorForRoofs
+    #if (i==1)|(i==3)|(i==4):
+    if (i==1):
+      #ax.plot(x[scomp_ix_elbow[i]:],y[scomp_ix_elbow[i]:],c='k',ls=':',lw=2,alpha=0.4)
+      ax.plot(x[scomp_ix_elbow[i]:],y[scomp_ix_elbow[i]:],c='k',ls=':',lw=2)
+    else:
+      ax.plot(x[scomp_ix_elbow[i]:],y[scomp_ix_elbow[i]:],c='k',ls='-',lw=2)
+
+for i in range(0,len(smemroofs)):
+    roof = smemroofs[i]
+    y = x * roof / scalingFactorForRoofs
+#    ax.plot(x[:smem_ix_elbow[i]+1],y[:smem_ix_elbow[i]+1],c=colors[i],ls='-',lw='2')
+    ax.plot(x[:smem_ix_elbow[i]+1],y[:smem_ix_elbow[i]+1],c='k',ls='-',lw='2')
+
+
+marker_handles = list()
+marker_handles1 = list()
+for i in range(2,len(AI_mul)):
+  marker_handles.append(ax.plot(float(AI_mul[i]),float(FLOPS_fma_mul[i]),c=colors[len(AI)+i],marker=styles[i],linestyle='None',ms=markersize,label=labels_mul[i])[0])
+for i in range(2,len(AI_mul)):
+  marker_handles.append(ax.plot(float(AI_mul[i]),float(FLOPS_nofma_mul[i]),c=colors[len(AI)+i],marker=styles[i],linestyle='None',fillstyle='none',ms=markersize,label=labels_mul[len(AI)+i])[0])
+
+#for i in range(0,len(AI)):
+for i in range(2,len(AI)):
+#  ax.plot(float(AI[i]),float(FLOPS[i]),c=colors[i],marker=styles[i],linestyle='None',ms=markersize)
+#  marker_handles.append(ax.plot(float(AI[i]),float(FLOPS_fma[i]),c=colors[2],marker=styles[i],linestyle='None',ms=markersize,label=labels[i]))
+#  marker_handles.append(ax.plot(float(AI[i]),float(FLOPS_nofma[i]),c=colors[2],marker=styles[i],linestyle='None',ms=markersize))
+  marker_handles.append(ax.plot(float(AI[i]),float(FLOPS_fma[i]),c=colors[i],marker=styles[i],linestyle='None',ms=markersize,label=labels[i])[0])
+  marker_handles1.append(ax.plot([],[],c = 'gray', marker=styles[i],linestyle='None',ms=markersize,label=labels[i])[0])
+for i in range(2,len(AI)):
+  marker_handles.append(ax.plot(float(AI[i]),float(FLOPS_nofma[i]),c=colors[i],marker=styles[i],linestyle='None',fillstyle='none',ms=markersize,label=labels[len(AI)+i])[0])
+  marker_handles1.append(ax.plot([],[],c = 'gray', marker=styles[i],linestyle='None',fillstyle='none',ms=markersize,label=labels[len(AI)+i])[0])
+
+
+
+
+for roof in scomproofs:
+    i=scomproofs.index(roof)
+    #if (i==1)|(i==3)|(i==4):
+    if (i==1):
+      ax.text(x[-ixx],roof/scalingFactorForRoofs,
+            scomp_roof_name[scomproofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GFLOP/s',
+#            weight='ultralight',
+#            alpha=0.4,
+            horizontalalignment='right',
+            verticalalignment='bottom')
+    elif i==2:
+      ax.text(x[-ixx],roof/scalingFactorForRoofs -ixx/2,
+            scomp_roof_name[scomproofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GFLOP/s',
+            horizontalalignment='right',
+            verticalalignment='top')
+    else:
+      ax.text(x[-ixx],roof/scalingFactorForRoofs,
+            scomp_roof_name[scomproofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GFLOP/s',
+            horizontalalignment='right',
+            verticalalignment='bottom')
+
+for roof in smemroofs:
+    ang = np.arctan(np.log10(xlim[1]/xlim[0]) / np.log10(ylim[1]/ylim[0]) 
+                                 * fig.get_size_inches()[1]/fig.get_size_inches()[0] )
+    ax.text(x[ixx],x[ixx]*roof/scalingFactorForRoofs*(1+0.43*np.sin(ang)**2),
+            smem_roof_name[smemroofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GB/s',
+            horizontalalignment='left',
+            verticalalignment='bottom',
+            rotation=180/np.pi*ang)
+
+i=2
+mins=list()
+maxs=list()
+min=FLOPS_fma_mul[i]
+#max=AI_mul[i]*smemroofs[0]
+max=scomproofs[0]
+mins.append(min)
+maxs.append(max)
+ax.errorbar(AI_mul[i],(min+max)/2,yerr=(max-min)/2,ls='None',capsize=6,c='r',alpha=0.7,elinewidth=2,capthick=2)
+bbox_props=dict(boxstyle="circle,pad=0.01",fc="None",ec='r',lw=1)
+#ax.text(AI_mul[i]-0.8,(min+max)/2*0.78,'1', color='r',horizontalalignment='left', verticalalignment='bottom', rotation=0, bbox=bbox_props)
+ax.text(AI_mul[i]-0.5,np.power(10,(np.log10(min)+np.log10(max))/2),'1', color='r',horizontalalignment='right', verticalalignment='center', rotation=0, bbox=bbox_props)
+
+min=FLOPS_nofma_mul[i]
+max=scomproofs[1]
+mins.append(min)
+maxs.append(max)
+ax.errorbar(AI_mul[i]*0.6,(min+max)/2,yerr=(max-min)/2,ls='None',capsize=6,c='r',alpha=0.7,elinewidth=2,capthick=2)
+#ax.text(AI_mul[i]-2.2,(min+max)/2*0.85,'2', color='r',horizontalalignment='left', verticalalignment='bottom', rotation=0, bbox=bbox_props)
+ax.text(AI_mul[i]*0.6-0.4,np.power(10,(np.log10(min)+np.log10(max))/2),'2', color='r',horizontalalignment='right', verticalalignment='center', rotation=0, bbox=bbox_props)
+
+min=FLOPS_nofma_mul[i]
+max=scomproofs[2]
+mins.append(min)
+maxs.append(max)
+ax.errorbar(AI_mul[i]*0.83,(min+max)/2,yerr=(max-min)/2,ls='None',capsize=6,c='r',alpha=0.7,elinewidth=2,capthick=2)
+#ax.text(AI_mul[i]-1.4,(min+max)/2*0.85,'3', color='r',horizontalalignment='left', verticalalignment='bottom', rotation=0, bbox=bbox_props)
+ax.text(AI_mul[i]*0.83-0.5,np.power(10,(np.log10(min)+np.log10(max))/2),'3', color='r',horizontalalignment='right', verticalalignment='center', rotation=0, bbox=bbox_props)
+
+min=scomproofs[4]
+max=FLOPS_nofma_mul[i]
+mins.append(max)
+maxs.append(min)
+ax.errorbar(AI_mul[i],(min+max)/2,yerr=(max-min)/2,ls='None',capsize=6,c='r',alpha=0.7,elinewidth=2,capthick=2)
+bbox_props=dict(boxstyle="circle,pad=0.01",fc="None",ec='r',lw=1)
+ax.text(AI_mul[i]-0.5,np.power(10,(np.log10(min)+np.log10(max))/2),'4', color='r',horizontalalignment='right', verticalalignment='center', rotation=0, bbox=bbox_props)
+
+min=FLOPS_nofma[i]
+max=scomproofs[2]
+mins.append(min)
+maxs.append(max)
+ax.errorbar(AI[i]*1.2,(min+max)/2,yerr=(max-min)/2,ls='None',capsize=6,c='b',alpha=0.7,elinewidth=4,capthick=4)
+bbox_props=dict(boxstyle="circle,pad=0.01",fc="None",ec='b',lw=1)
+ax.text(AI[i]+5,np.power(10,(np.log10(min)+np.log10(max))/2),'5', color='b',horizontalalignment='left', verticalalignment='center', rotation=0, bbox=bbox_props)
+
+print mins
+print maxs
+#print (np.array(maxs)-np.array(mins))/np.array(mins)
+print (100*np.array(mins)/np.array(maxs)).tolist()
+
+
+
+#leg1 = plt.legend(handles = marker_handles,loc=4, ncol=2)
+#leg1 = plt.legend(handles = marker_handles1,loc=4, ncol=1)
+leg1 = plt.legend(handles = marker_handles1,loc='lower right',bbox_to_anchor = (0.47,0),scatterpoints = 1)
+ax.add_artist(leg1)
+
+patch_handles = list()
+#labels_iw=['FMA','non-FMA']
+labels_iw=['Canonical Performance','Empirical Performance']
+colors_iw=['r','b']
+for i in range(0,2):
+    patch_handles.append(mpatches.Patch(color=colors_iw[i],label = labels_iw[i]))
+
+#leg2 = plt.legend(handles = patch_handles,loc='lower right',bbox_to_anchor = (0.6,0),scatterpoints = 1)
+leg2 = plt.legend(handles = patch_handles,loc=4, ncol=1)
+
+ax.text(xlim[0]*1.1,ylim[1]/1.1,'V100',horizontalalignment='left',verticalalignment='top')
+
+
+plt.savefig(filename+'.png')
+plt.savefig(filename+'.eps')
+
+#plt.show()
+
+

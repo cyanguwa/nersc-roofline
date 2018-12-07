@@ -1,0 +1,185 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import sys
+import os
+import matplotlib.patches as mpatches
+font = { 'size'   : 20}
+plt.rc('font', **font)
+
+filename = 'plot_' + sys.argv[0].split('.')[0]+'_'+sys.argv[0].split('.')[1]
+scalingFactorForRoofs = 1
+
+#smemroofs = [2996.77, 900.00, 828.758]
+smemroofs = [900.00, 828.758]
+#scomproofs = [7987.2, 7068.86, 3900, 3535.79]
+scomproofs = [7833.6, 7068.86, 3916.8, 3535.79]
+#smem_roof_name = ['L2', 'Theoretical HBM', 'Empirical HBM']
+smem_roof_name = ['Theoretical HBM', 'Empirical HBM']
+#scomp_roof_name = ['Theoretical/Empirical FMA', 'Theoretical No-FMA', 'Empirical No-FMA']
+scomp_roof_name = ['Theoretical FMA', 'Empirical FMA', 'Theoretical No-FMA', 'Empirical No-FMA']
+
+colors = ['b','g','r','y','m','c']
+#colors = ['r','y','g','b',]
+styles = ['o','s','v','^','D',"<",">","*","h","H","+","1","2","3","4","8","p","d","|","_",".",","]
+
+fig = plt.figure(1,figsize=(10.67,6.6))
+plt.clf()
+ax = fig.gca()
+ax.set_xscale('log')
+ax.set_yscale('log')
+ax.set_xlabel('Arithmetic Intensity [FLOPs/Byte]')
+ax.set_ylabel('Performance [GFLOP/sec]')
+#ax.set_title('Original CPU Performance')
+
+
+nx = 10000
+xmin = -0.9
+xmax = 5
+ymin = 100.0 / scalingFactorForRoofs
+ymax = 11000/scalingFactorForRoofs
+
+ax.set_xlim(10**xmin, 10**xmax)
+ax.set_ylim(ymin, ymax)
+
+ixx = int(nx*0.01)
+xlim = ax.get_xlim()
+ylim = ax.get_ylim()
+
+scomp_x_elbow = [] 
+scomp_ix_elbow = [] 
+scomp_x_elbow_hbm = [] 
+scomp_ix_elbow_hbm = [] 
+smem_x_elbow = [] 
+smem_ix_elbow = [] 
+smem_x_elbow_hbm = [] 
+smem_ix_elbow_hbm = [] 
+
+x = np.logspace(xmin,xmax,nx)
+for roof in scomproofs:
+    for ix in range(1,nx):
+        if smemroofs[0] * x[ix] >= roof and smemroofs[0] * x[ix-1] < roof:
+            scomp_x_elbow.append(x[ix-1])
+            scomp_ix_elbow.append(ix-1)
+            break
+
+for roof in scomproofs:
+    for ix in range(1,nx):
+        if smemroofs[1] * x[ix] >= roof and smemroofs[1] * x[ix-1] < roof:
+            scomp_x_elbow_hbm.append(x[ix-1])
+            scomp_ix_elbow_hbm.append(ix-1)
+            break
+
+for roof in smemroofs:
+    for ix in range(1,nx):
+        if (scomproofs[0] <= roof * x[ix] and scomproofs[0] > roof * x[ix-1]):
+            smem_x_elbow.append(x[ix-1])
+            smem_ix_elbow.append(ix-1)
+            break        
+
+for roof in smemroofs:
+    for ix in range(1,nx):
+        if (scomproofs[1] <= roof * x[ix] and scomproofs[1] > roof * x[ix-1]):
+            smem_x_elbow_hbm.append(x[ix-1])
+            smem_ix_elbow_hbm.append(ix-1)
+            break        
+
+for i in range(0,len(scomproofs)):
+    roof = scomproofs[i]
+    y = np.ones(len(x)) * roof / scalingFactorForRoofs
+#    ax.plot(x[scomp_ix_elbow[i]:],y[scomp_ix_elbow[i]:],c='k',ls='-',lw=2)
+    #ax.plot(x[scomp_ix_elbow[i]:scomp_ix_elbow_hbm[i]],y[scomp_ix_elbow[i]:scomp_ix_elbow_hbm[i]],c='k',ls=':',lw=2,alpha=0.4)
+    ax.plot(x[scomp_ix_elbow[i]:scomp_ix_elbow_hbm[i]],y[scomp_ix_elbow[i]:scomp_ix_elbow_hbm[i]],c='k',ls=':',lw=2)
+
+for i in range(0,len(scomproofs)):
+    roof = scomproofs[i]
+    y = np.ones(len(x)) * roof / scalingFactorForRoofs
+    #ax.plot(x[scomp_ix_elbow_hbm[i]:],y[scomp_ix_elbow_hbm[i]:],c='k',ls='-',lw=2)
+    if 'Theo' in scomp_roof_name[i]:
+      ax.plot(x[scomp_ix_elbow_hbm[i]:],y[scomp_ix_elbow_hbm[i]:],c='k',ls=':',lw=2)
+    else:
+      ax.plot(x[scomp_ix_elbow_hbm[i]:],y[scomp_ix_elbow_hbm[i]:],c='k',ls='-',lw=2)
+
+
+line_handles=list()
+labels_n=['Theoretical Ceiling','Empirical Ceiling']
+for i in range(0,len(smemroofs)):
+    roof = smemroofs[i]
+    y = x * roof / scalingFactorForRoofs
+#    ax.plot(x[:smem_ix_elbow[i]+1],y[:smem_ix_elbow[i]+1],c=colors[i],ls='-',lw=2)
+#    if 'HBM' in smem_roof_name[i]:
+#      ax.plot(x[:smem_ix_elbow[i]+1],y[:smem_ix_elbow[i]+1],c='k',ls='-',lw=2)
+#    else:
+#      ax.plot(x[:smem_ix_elbow[i]+1],y[:smem_ix_elbow[i]+1],c='k',ls=':',lw=2,alpha=0.4)
+    if i==1:
+      #line_handles.append(ax.plot(x[:smem_ix_elbow[i]+1],y[:smem_ix_elbow[i]+1],c='k',ls='-',lw=2,label=labels_n[i])[0])
+      line_handles.append(ax.plot(x[:smem_ix_elbow_hbm[i]+1],y[:smem_ix_elbow_hbm[i]+1],c='k',ls='-',lw=2,label=labels_n[i])[0])
+      ax.plot(x[smem_ix_elbow_hbm[i]+1:smem_ix_elbow[i]+1],y[smem_ix_elbow_hbm[i]+1:smem_ix_elbow[i]+1],c='k',ls=':',lw=2,label=labels_n[i])
+    else:
+      #line_handles.append(ax.plot(x[:smem_ix_elbow[i]+1],y[:smem_ix_elbow[i]+1],c='k',ls=':',lw=2,alpha=0.4,label=labels_n[i])[0])
+      line_handles.append(ax.plot(x[:smem_ix_elbow[i]+1],y[:smem_ix_elbow[i]+1],c='k',ls=':',lw=2,label=labels_n[i])[0])
+
+
+
+for roof in scomproofs:
+    i=scomproofs.index(roof)
+    #if scomproofs.index(roof)==len(scomproofs)-1:
+    if (i==1)|(i==3):
+      ax.text(x[-ixx],roof/scalingFactorForRoofs - ixx*1.5,
+            scomp_roof_name[scomproofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GFLOP/s',
+            horizontalalignment='right',
+            verticalalignment='top')
+    else:
+      ax.text(x[-ixx],roof/scalingFactorForRoofs,
+            scomp_roof_name[scomproofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GFLOP/s',
+            horizontalalignment='right',
+            verticalalignment='bottom')
+
+ixx_ix_elbow=list()
+for roof in smemroofs:
+    ixx_ix_elbow.append(0)
+    for ix in range(1,nx):
+        if (ylim[0] <= roof * x[ix] and ylim[0] > roof * x[ix-1]):
+            ixx_ix_elbow[-1]=ix-1 -ixx
+            break
+
+
+for i in range(0,len(smemroofs)):
+    roof = smemroofs[i]
+    ang = np.arctan(np.log10(xlim[1]/xlim[0]) / np.log10(ylim[1]/ylim[0]) 
+                                 * fig.get_size_inches()[1]/fig.get_size_inches()[0] )
+    #if 'HBM' in smem_roof_name[i]:
+    if i==0:
+      ax.text(x[ixx+ixx_ix_elbow[i]]*0.95,x[ixx+ixx_ix_elbow[i]]*roof/scalingFactorForRoofs*(1+0.5*np.sin(ang)**2),
+            smem_roof_name[smemroofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GB/s',
+            horizontalalignment='left',
+            verticalalignment='bottom',
+            rotation=180/np.pi*ang)
+    elif i==1:
+      ax.text(x[ixx+ixx_ix_elbow[i]]*1.66,x[ixx+ixx_ix_elbow[i]]*roof/scalingFactorForRoofs*(1+0.4*np.sin(ang)**2),
+            smem_roof_name[smemroofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GB/s',
+            horizontalalignment='left',
+            verticalalignment='bottom',
+            rotation=180/np.pi*ang)
+#    else:
+#      ax.text(x[ixx+ixx_ix_elbow[i]],x[ixx+ixx_ix_elbow[i]]*roof/scalingFactorForRoofs*(1+0.4*np.sin(ang)**2),
+#            smem_roof_name[smemroofs.index(roof)] + ': ' + '{0:.1f}'.format(float(roof)/scalingFactorForRoofs) + ' GB/s',
+#            horizontalalignment='left',
+#            verticalalignment='bottom',
+#            weight='ultralight',
+#            alpha=0.4,
+#            rotation=180/np.pi*ang)
+
+
+#leg1 = plt.legend(handles = marker_handles, loc=4, ncol=2)
+leg1 = plt.legend(handles = line_handles,loc=4)
+
+ax.text(xlim[0]*1.2,ylim[1]/1.1,'V100',horizontalalignment='left',verticalalignment='top')
+
+plt.savefig(filename+'.png')
+plt.savefig(filename+'.eps')
+#plt.savefig('test1.png')
+#plt.savefig('test1.eps')
+
+#plt.show()
+
+
