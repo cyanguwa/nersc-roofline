@@ -1,0 +1,54 @@
+#!/bin/bash -l
+
+module load cuda
+export CUDA_VISIBLE_DEVICES=0
+
+cd /home/users/cjyang/GPP-perf-consis/BGW-Kernels
+mkdir Results_survey
+seqend=10
+arr=(1 2 3 4 5 6)
+
+label='survey.div.cmplx.fma'
+res=Results_survey/results.$label 
+touch $res
+for i in $(seq 1 $seqend)
+do 
+  for j in ${arr[@]}
+  do 
+  ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res 
+  done
+done
+
+label='survey.div.cmplx.nofma'
+res=Results_survey/results.$label 
+touch $res
+for i in $(seq 1 $seqend)
+do 
+  for j in ${arr[@]}
+  do 
+  ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res 
+  done
+done
+
+
+label='survey.div.cmplx.fma'
+res=Results_survey/results.nvprof.$label 
+touch $res
+for i in $(seq 1 $seqend)
+do 
+  for j in ${arr[@]}
+  do 
+  nvprof --kernels "NumBandNgpown_kernel" --metrics flop_count_dp  --metrics dram_read_throughput  --metrics dram_write_throughput --metrics dram_read_transactions --metrics dram_write_transactions ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res
+  done
+done
+
+label='survey.div.cmplx.nofma'
+res=Results_survey/results.nvprof.$label 
+touch $res
+for i in $(seq 1 $seqend)
+do 
+  for j in ${arr[@]}
+  do 
+  nvprof --kernels "NumBandNgpown_kernel" --metrics flop_count_dp  --metrics dram_read_throughput  --metrics dram_write_throughput --metrics dram_read_transactions --metrics dram_write_transactions ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res
+  done
+done
