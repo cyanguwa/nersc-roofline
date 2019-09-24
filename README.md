@@ -1,3 +1,3 @@
 # nersc-roofline
 
-This repo presents files necessary to generate results on https://nersc.gitlab.io/development/performance-debugging-tools/roofline/.
+This repo presents files necessary to generate results on https://docs.nersc.gov/programming/performance-debugging-tools/roofline/.
