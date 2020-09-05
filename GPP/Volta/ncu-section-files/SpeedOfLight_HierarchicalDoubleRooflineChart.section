@@ -1,0 +1,197 @@
+Identifier: "SpeedOfLight_HierarchicalDoubleRooflineChart"
+DisplayName: "GPU Speed Of Light Hierarchical Roofline Chart (Double Precision)"
+Extends: "SpeedOfLight"
+Description: "High-level overview of the utilization for compute and memory resources of the GPU presented as a roofline chart."
+Order: 12
+Sets {
+  Identifier: "detailed"
+}
+Sets {
+  Identifier: "full"
+}
+Body {
+  DisplayName: "SOL Rooflines"
+  Items {
+    RooflineChart {
+      Label: "Floating Point Operations Roofline"
+      AxisIntensity {
+        Label: "Arithmetic Intensity [FLOP/byte]"
+      }
+      AxisWork {
+        Label: "Performance [FLOP/s]"
+      }
+      Rooflines {
+        PeakWork {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "sm__sass_thread_inst_executed_op_dfma_pred_on.sum.peak_sustained"
+            }
+            ValuePerCycleMetrics {
+              Name: "sm__sass_thread_inst_executed_op_dfma_pred_on.sum.peak_sustained"
+            }
+            CyclesPerSecondMetric {
+              Name: "sm__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        PeakTraffic {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "dram__bytes.sum.peak_sustained"
+            }
+            CyclesPerSecondMetric {
+              Name: "dram__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        Options {
+          Label: "DRAM Roofline"
+        }
+      }
+      Rooflines {
+        PeakWork {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "sm__sass_thread_inst_executed_op_dfma_pred_on.sum.peak_sustained"
+            }
+            ValuePerCycleMetrics {
+              Name: "sm__sass_thread_inst_executed_op_dfma_pred_on.sum.peak_sustained"
+            }
+            CyclesPerSecondMetric {
+              Name: "sm__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        PeakTraffic {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "lts__t_bytes.sum.peak_sustained"
+            }
+            CyclesPerSecondMetric {
+              Name: "lts__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        Options {
+          Label: "L2 Roofline"
+        }
+      }
+      Rooflines {
+        PeakWork {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "sm__sass_thread_inst_executed_op_dfma_pred_on.sum.peak_sustained"
+            }
+            ValuePerCycleMetrics {
+              Name: "sm__sass_thread_inst_executed_op_dfma_pred_on.sum.peak_sustained"
+            }
+            CyclesPerSecondMetric {
+              Name: "sm__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        PeakTraffic {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "l1tex__t_bytes.sum.peak_sustained"
+            }
+            CyclesPerSecondMetric {
+              Name: "l1tex__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        Options {
+          Label: "L1 Roofline"
+        }
+      }
+      AchievedValues {
+        AchievedWork {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dadd_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dmul_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dfma_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dfma_pred_on.sum.per_cycle_elapsed"
+            }
+            CyclesPerSecondMetric {
+              Name: "smsp__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        AchievedTraffic {
+          Metric {
+            Name: "dram__bytes.sum.per_second"
+          }
+        }
+        Options {
+          Label: "DRAM Achieved Value"
+        }
+      }
+      AchievedValues {
+        AchievedWork {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dadd_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dmul_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dfma_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dfma_pred_on.sum.per_cycle_elapsed"
+            }
+            CyclesPerSecondMetric {
+              Name: "smsp__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        AchievedTraffic {
+          Metric {
+            Name: "lts__t_bytes.sum.per_second"
+          }
+        }
+        Options {
+          Label: "L2 Achieved Value"
+        }
+      }
+      AchievedValues {
+        AchievedWork {
+          ValueCyclesPerSecondExpression {
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dadd_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dmul_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dfma_pred_on.sum.per_cycle_elapsed"
+            }
+            ValuePerCycleMetrics {
+              Name: "smsp__sass_thread_inst_executed_op_dfma_pred_on.sum.per_cycle_elapsed"
+            }
+            CyclesPerSecondMetric {
+              Name: "smsp__cycles_elapsed.avg.per_second"
+            }
+          }
+        }
+        AchievedTraffic {
+          Metric {
+            Name: "l1tex__t_bytes.sum.per_second"
+          }
+        }
+        Options {
+          Label: "L1 Achieved Value"
+        }
+      }
+    }
+  }
+}
+

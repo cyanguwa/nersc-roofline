@@ -1,0 +1,51 @@
+#!/bin/bash -l
+#SBATCH -n 1
+#SBATCH -t 01:00:00
+#SBATCH -A nstaff
+#SBATCH -C knl,quad,cache
+#SBATCH --perf=vtune
+
+module swap craype-haswell craype-mic-knl
+
+export OMP_NUM_THREADS=64
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+module unload darshan
+export PATH=$PATH:/global/cfs/cdirs/nstaff/cjyang/P3HPC/Empirical_Roofline_Tool-1.1.0/new-GPP/BGW-Kernels/sde/sde-external-8.16.0-2018-01-30-lin/
+
+cd /global/cscratch1/sd/cjyang/arxiv-likwid/nersc-roofline/GPP/KNL
+mkdir Results_sde_survey_$SLURM_JOB_ID
+seqend=1
+#arr=(1 2 3 4 5 6)
+arr=(6)
+
+label='survey.tools.div.cmplx.fma'
+res=Results_sde_survey_$SLURM_JOB_ID/result.sde.out 
+touch $res
+for i in $(seq 1 $seqend)
+do 
+  for j in ${arr[@]}
+  do
+    srun -n 1 -c 272 --cpu_bind=cores --cpu-freq=1401000 sde64 -knl -d -iform 1 -omix $res -global_region -start_ssc_mark 111:repeat -stop_ssc_mark 222:repeat -- ./gppCustomComplex.ex.$label.iw$j 512 2 32768 20 0   
+  done
+done
+
+cd Results_sde_survey_$SLURM_JOB_ID/
+cp ../parse-sde2.sh .
+
+echo ---------------------------------------
+echo "SDE on KNL"
+echo ---------------------------------------
+./parse-sde2.sh result.sde.out > result.sde.out.parse
+flops=`grep 'Total FLOPs = ' result.sde.out.parse | cut -d '=' -f 2`
+gflops=`python -c "print('{0:.3f}'.format($flops/1000.0/1000/1000))"`
+echo GFLOPS: $gflops
+bytes=`grep 'Total Bytes = ' result.sde.out.parse | cut -d '=' -f 2`
+gbytes=`python -c "print('{0:.3f}'.format($bytes/1000.0/1000/1000))"`
+echo L1 Bytes: $gbytes
+
+
+
+
+

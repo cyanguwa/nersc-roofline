@@ -1,6 +1,6 @@
 #EXE = gppKer_double.ex.likwid.div.dbl.nofma.iw6
 #SRC = gppKer_double.cpp 
-EXE = gppCustomComplex.ex.survey.likwid.div.cmplx.nofma.iw6
+EXE = gppCustomComplex.ex.survey.likwid.div.cmplx.fma.iw6
 SRC = gppCustomComplex.cpp 
 
 #CXX = xlc++_r
@@ -13,15 +13,15 @@ ifeq ($(CXX),CC)
 ##Intel compiler flag
 	#CXXFLAGS= -g -O3 -qopenmp -qopt-report=5 -std=c++11
 	CXXFLAGS= -g -O3 -qopenmp -std=c++11
-    CXXFLAGS+=-no-fma #Fused multiply and add
-    #CXXFLAGS+=-DTOOLS -I${VTUNE_AMPLIFIER_XE_2018_DIR}/include 
+    CXXFLAGS+=-fma #Fused multiply and add
+    #CXXFLAGS+=-DTOOLS -I${VTUNE_DIR}/include 
     #CXXFLAGS+=-I /usr/common/software/likwid/4.3.0/include/ -DLIKWID_PERFMON
-#    #CXXFLAGS+=-I /usr/common/software/likwid/4.3.0/include/ -DUSE_VTUNE -I${VTUNE_AMPLIFIER_XE_2018_DIR}/include -DLIKWID_PERFMON
+#    #CXXFLAGS+=-I /usr/common/software/likwid/4.3.0/include/ -DUSE_VTUNE -I${VTUNE_DIR}/include -DLIKWID_PERFMON
     #CXXFLAGS+=-xCORE-AVX2
     CXXFLAGS+=-xMIC-AVX512
-    LINKFLAGS=-qopenmp -dynamic
+    LINKFLAGS=-qopenmp 
     #LINKFLAGS+=-L /usr/common/software/likwid/4.3.0/lib -llikwid
-    #LINKFLAGS+=-L ${VTUNE_AMPLIFIER_XE_2018_DIR}/lib64 -littnotify 
+    #LINKFLAGS+=-L ${VTUNE_DIR}/lib64 -littnotify 
 
 #Cray compiler flag
 #	CXXFLAGS= -hlist=a

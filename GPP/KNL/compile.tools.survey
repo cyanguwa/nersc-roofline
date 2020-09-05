@@ -1,0 +1,22 @@
+#!/bin/bash -l
+module swap craype-haswell craype-mic-knl
+module load vtune
+
+cd /global/cscratch1/sd/cjyang/arxiv-likwid/nersc-roofline/GPP/KNL
+
+sed -i 's/#CXXFLAGS+=-DTOOLS/CXXFLAGS+=-DTOOLS/g' Makefile
+sed -i 's/#LINKFLAGS+=-L ${VTUNE/LINKFLAGS+=-L ${VTUNE/g' Makefile
+
+label='survey.tools.div.cmplx.fma'
+sed -i 's/CXXFLAGS+=.*fma/CXXFLAGS+=-fma/g' Makefile
+arr=(1 2 3 4 5 6)
+for i in ${arr[@]}
+do
+  sed -i "s/#define nend.*/#define nend $i/g" gppCustomComplex.cpp
+  sed -i "s/gppCustomComplex.ex.*/gppCustomComplex.ex.$label.iw$i/g" Makefile
+  make clean && make
+done
+
+sed -i 's/CXXFLAGS+=-DTOOLS/#CXXFLAGS+=-DTOOLS/g' Makefile
+sed -i 's/LINKFLAGS+=-L ${VTUNE/#LINKFLAGS+=-L ${VTUNE/g' Makefile
+

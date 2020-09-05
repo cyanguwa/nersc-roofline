@@ -1,11 +1,14 @@
 #!/bin/bash -l
 
-cd /home/users/cjyang/GPP-perf-consis/BGW-Kernels
+cd /global/cscratch1/sd/cjyang/arxiv-likwid/nersc-roofline/GPP/Volta
+
+module load cuda
 
 label='survey.div.cmplx.fma'
 sed -i 's/fmad=.*/fmad=true/g' Makefile
 
-arr=(1 2 3 4 5 6)
+#arr=(1 2 3 4 5 6)
+arr=(6)
 for i in ${arr[@]}
 do
   sed -i "s/#define nend.*/#define nend $i/g" GPUComplex.h
@@ -13,11 +16,3 @@ do
   make clean && make
 done
 
-label='survey.div.cmplx.nofma'
-sed -i 's/fmad=.*/fmad=false/g' Makefile
-for i in ${arr[@]}
-do
-  sed -i "s/#define nend.*/#define nend $i/g" GPUComplex.h
-  sed -i "s/gppKer_gpuComplex.ex.*/gppKer_gpuComplex.ex.$label.iw$i/g" Makefile
-  make clean && make
-done

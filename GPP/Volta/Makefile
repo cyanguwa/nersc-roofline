@@ -1,4 +1,4 @@
-EXE = gppKer_gpuComplex.ex.div.cmplx.nofma.iw6
+EXE = gppKer_gpuComplex.ex.survey.div.cmplx.fma.iw6
 SRC1 = gppKer_gpuComplex.cpp 
 SRC2 = GPUComplex.cu
 #EXE = gppKer_double.ex

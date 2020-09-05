@@ -1,0 +1,49 @@
+#!/bin/bash -l
+#SBATCH -n 1
+#SBATCH -t 03:00:00
+#SBATCH -A nstaff
+#SBATCH -C knl,quad,cache
+#SBATCH --perf=vtune
+
+module swap craype-haswell craype-mic-knl
+
+export OMP_NUM_THREADS=64
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+module unload darshan
+module load vtune #/2018.up2
+
+cd /global/cscratch1/sd/cjyang/arxiv-likwid/nersc-roofline/GPP/KNL
+mkdir Results_tools_$SLURM_JOB_ID
+seqend=1
+
+label='survey.tools.div.cmplx.fma'
+res=Results_tools_$SLURM_JOB_ID/results.$label 
+touch $res
+for i in $(seq 1 $seqend)
+do 
+  srun -n 1 -c 272 --cpu_bind=cores --cpu-freq=1401000 vtune -start-paused -r Results_tools_$SLURM_JOB_ID/my-vtune.knl -collect memory-access -finalization-mode=none -data-limit=0 -- ./gppCustomComplex.ex.$label.iw6 512 2 32768 20 0 >> $res
+done
+
+cd Results_tools_$SLURM_JOB_ID/
+cp ../parse-vtune.sh .
+cp ../parse-vtune.py .
+
+vtune -report hw-events -group-by=package -r my-vtune.knl/ -format csv -csv-delimiter comma  > my-vtune.knl.summary
+
+
+echo ---------------------------------------
+echo "VTune on KNL"
+echo ---------------------------------------
+./parse-vtune.sh my-vtune.knl.summary  > my-vtune.knl.summary.parse
+ddr_bytes=`grep 'Total Bytes = ' my-vtune.knl.summary.parse | tail -n 2 | head -n 1 | cut -d '=' -f 2`
+ddr_gbytes=`python -c "print('{0:.3f}'.format($ddr_bytes/1000.0/1000/1000))"`
+echo DDR Bytes: $ddr_gbytes
+hbm_bytes=`grep 'Total Bytes = ' my-vtune.knl.summary.parse | tail -n 1 | cut -d '=' -f 2`
+hbm_gbytes=`python -c "print('{0:.3f}'.format($hbm_bytes/1000.0/1000/1000))"`
+echo MCDRAM Bytes: $hbm_gbytes
+
+
+
+

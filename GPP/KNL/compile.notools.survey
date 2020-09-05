@@ -1,0 +1,17 @@
+#!/bin/bash -l
+module swap craype-haswell craype-mic-knl
+
+cd /global/cscratch1/sd/cjyang/arxiv-likwid/nersc-roofline/GPP/KNL
+
+label='survey.div.cmplx.fma'
+sed -i 's/CXXFLAGS+=.*fma/CXXFLAGS+=-fma/g' Makefile
+
+arr=(1 2 3 4 5 6)
+for i in ${arr[@]}
+do
+  sed -i "s/#define nend.*/#define nend $i/g" gppCustomComplex.cpp
+  sed -i "s/gppCustomComplex.ex.*/gppCustomComplex.ex.$label.iw$i/g" Makefile
+  make clean && make
+done 
+
+

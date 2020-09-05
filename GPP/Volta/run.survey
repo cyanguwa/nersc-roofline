@@ -1,12 +1,13 @@
 #!/bin/bash -l
 
-module load cuda
+#module load cuda
 export CUDA_VISIBLE_DEVICES=0
 
-cd /home/users/cjyang/GPP-perf-consis/BGW-Kernels
+cd /global/cscratch1/sd/cjyang/arxiv-likwid/nersc-roofline/GPP/Volta
 mkdir Results_survey
-seqend=10
-arr=(1 2 3 4 5 6)
+seqend=1
+#arr=(1 2 3 4 5 6)
+arr=(6)
 
 label='survey.div.cmplx.fma'
 res=Results_survey/results.$label 
@@ -19,36 +20,34 @@ do
   done
 done
 
-label='survey.div.cmplx.nofma'
-res=Results_survey/results.$label 
-touch $res
-for i in $(seq 1 $seqend)
-do 
-  for j in ${arr[@]}
-  do 
-  ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res 
-  done
-done
+metnv='flop_count_dp,flop_count_sp,flop_count_hp,gld_transactions,gst_transactions,atomic_transactions,local_load_transactions,local_store_transactions,shared_load_transactions,shared_store_transactions,l2_read_transactions,l2_write_transactions,dram_read_transactions,dram_write_transactions,system_read_transactions,system_write_transactions'
+metncu10='sm__cycles_elapsed.avg,sm__cycles_elapsed.avg.per_second,sm__sass_thread_inst_executed_op_hadd_pred_on.sum,sm__sass_thread_inst_executed_op_hmul_pred_on.sum,sm__sass_thread_inst_executed_op_hfma_pred_on.sum,sm__sass_thread_inst_executed_op_fadd_pred_on.sum,sm__sass_thread_inst_executed_op_fmul_pred_on.sum,sm__sass_thread_inst_executed_op_ffma_pred_on.sum,sm__sass_thread_inst_executed_op_hadd_pred_on.sum,sm__sass_thread_inst_executed_op_hmul_pred_on.sum,sm__sass_thread_inst_executed_op_hfma_pred_on.sum,sm__inst_executed_pipe_tensor.sum,l1tex__t_sectors_pipe_lsu_mem_global_op_ld.sum,l1tex__t_bytes_pipe_lsu_mem_global_op_st.sum,l1tex__t_set_accesses_pipe_lsu_mem_global_op_atom.sum,l1tex__t_set_accesses_pipe_lsu_mem_global_op_red.sum,l1tex__t_set_accesses_pipe_tex_mem_surface_op_atom.sum,l1tex__t_set_accesses_pipe_tex_mem_surface_op_red.sum,l1tex__t_sectors_pipe_lsu_mem_local_op_ld.sum,l1tex__t_sectors_pipe_lsu_mem_local_op_st.sum,l1tex__data_pipe_lsu_wavefronts_mem_shared_op_ld.sum,l1tex__data_pipe_lsu_wavefronts_mem_shared_op_st.sum,lts__t_sectors_op_read.sum,lts__t_sectors_op_write.sum,lts__t_sectors_op_atom.sum,lts__t_sectors_op_red.sum,dram__sectors_read.sum,dram__sectors_write.sum'
+metncu11='sm__cycles_elapsed.avg,sm__cycles_elapsed.avg.per_second,sm__sass_thread_inst_executed_op_dadd_pred_on.sum,sm__sass_thread_inst_executed_op_dfma_pred_on.sum,sm__sass_thread_inst_executed_op_dmul_pred_on.sum,sm__sass_thread_inst_executed_op_fadd_pred_on.sum,sm__sass_thread_inst_executed_op_ffma_pred_on.sum,sm__sass_thread_inst_executed_op_fmul_pred_on.sum,sm__sass_thread_inst_executed_op_hadd_pred_on.sum,sm__sass_thread_inst_executed_op_hfma_pred_on.sum,sm__sass_thread_inst_executed_op_hmul_pred_on.sum,sm__inst_executed_pipe_tensor.sum,l1tex__t_bytes.sum,lts__t_bytes.sum,dram__bytes.sum'
+
 
 
 label='survey.div.cmplx.fma'
-res=Results_survey/results.nvprof.$label 
-touch $res
-for i in $(seq 1 $seqend)
-do 
-  for j in ${arr[@]}
-  do 
-  nvprof --kernels "NumBandNgpown_kernel" --metrics flop_count_dp  --metrics dram_read_throughput  --metrics dram_write_throughput --metrics dram_read_transactions --metrics dram_write_transactions ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res
-  done
-done
 
-label='survey.div.cmplx.nofma'
+j=6
+module load cuda/10.2.89
 res=Results_survey/results.nvprof.$label 
 touch $res
-for i in $(seq 1 $seqend)
-do 
-  for j in ${arr[@]}
-  do 
-  nvprof --kernels "NumBandNgpown_kernel" --metrics flop_count_dp  --metrics dram_read_throughput  --metrics dram_write_throughput --metrics dram_read_transactions --metrics dram_write_transactions ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res
-  done
-done
+which nvprof
+nvprof --version 
+srun -n1 nvprof --kernels "NumBandNgpown_kernel" --metrics $metnv ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res
+
+res=Results_survey/results.ncu10.$label 
+touch $res
+which nv-nsight-cu-cli
+nv-nsight-cu-cli -v
+srun -n1 nv-nsight-cu-cli  -k "NumBandNgpown_kernel" --metrics $metncu10 ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res
+
+module load nsight-compute/2020.1.0
+res=Results_survey/results.ncu11.$label 
+touch $res
+which ncu
+ncu -v
+srun -n1 ncu -k "NumBandNgpown_kernel" --metrics $metncu11 ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res
+
+srun -n1 ncu -k "NumBandNgpown_kernel" -o ncu.prof --section-folder ./ncu-section-files --section SpeedOfLight_HierarchicalDoubleRooflineChart ./gppKer_gpuComplex.ex.$label.iw$j 512 2 32768 20 0 
+

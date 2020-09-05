@@ -1,0 +1,33 @@
+#!/bin/bash -l
+#SBATCH -n 1
+#SBATCH -t 03:00:00
+#SBATCH -A nstaff
+#SBATCH -C knl,quad,cache
+
+module swap craype-haswell craype-mic-knl
+
+export OMP_NUM_THREADS=64
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+module unload darshan
+module load advisor
+
+cd /global/cscratch1/sd/cjyang/arxiv-likwid/nersc-roofline/GPP/KNL
+mkdir Results_adv_$SLURM_JOB_ID
+seqend=1
+
+label='survey.div.cmplx.fma'
+res=Results_adv_$SLURM_JOB_ID/results.$label 
+touch $res
+for i in $(seq 1 $seqend)
+do 
+
+  srun -n 1 -c 272 --cpu_bind=cores --cpu-freq=1401000 advixe-cl --collect=roofline --project-dir=Results_adv_$SLURM_JOB_ID/my_adv.knl -- ./gppCustomComplex.ex.$label.iw6 512 2 32768 20 0 >> $res
+
+done
+
+cd Results_adv_$SLURM_JOB_ID/
+#advixe-cl -report roofline --project-dir Results_adv_$SLURM_JOB_ID/my_adv.knl 
+advixe-cl -report roofline --project-dir my_adv.knl > adv.html
+

@@ -1,0 +1,97 @@
+#!/bin/bash -l
+#SBATCH -n 1
+#SBATCH -t 00:10:00
+#SBATCH -A nstaff
+#SBATCH -C knl,quad,cache
+#SBATCH --perf=vtune
+
+module swap craype-haswell craype-mic-knl
+
+export OMP_NUM_THREADS=64
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+
+module unload darshan
+module load likwid
+
+cd /global/cscratch1/sd/cjyang/arxiv-likwid/nersc-roofline/GPP/KNL
+mkdir Results_likwid_survey_$SLURM_JOB_ID
+seqend=1
+#arr=(1 2 3 4 5 6)
+arr=(6)
+gs=('FLOPS_DP' 'HBM_CACHE' 'L2' 'DATA')
+
+
+label='survey.likwid.div.cmplx.fma'
+for i in $(seq 1 $seqend)
+do 
+  for j in ${arr[@]}
+  do
+  for k in ${gs[@]}
+  do 
+    kk=${k/_/.}
+    echo $kk
+    res=Results_likwid_survey_$SLURM_JOB_ID/result.likwid.$kk.txt
+    touch $res
+
+    srun -n 1 -c 272 --cpu_bind=cores --cpu-freq=1401000 likwid-perfctr -c 0-271 -g $k ./gppCustomComplex.ex.$label.iw$j 512 2 32768 20 0 >> $res 
+  done 
+
+  done
+done
+
+cd Results_likwid_survey_$SLURM_JOB_ID/
+
+echo ---------------------------------------
+echo "Likwid on KNL"
+echo ---------------------------------------
+# FLOPS
+#echo "Run with -g FLOPS_DP"
+mflopss=`grep AVX512 result.likwid.FLOPS.DP.txt | tail -n 1 | cut -d '|' -f 3`
+runtime=`grep RDTSC result.likwid.FLOPS.DP.txt | tail -n 1 | cut -d '|' -f 6`
+gflops=`python -c "print('{0:.3f}'.format($mflopss * $runtime/1000))"`
+gflopss=`python -c "print('{0:.3f}'.format($mflopss/1000))"`
+#echo "Runtime: $runtime"
+#echo "GFLOP/s: $gflopss"
+echo "GFLOPS: $gflops"
+#echo 
+#BYTES - DDR and MCDRAM
+#echo "Run with -g HBM_CACHE"
+hbm_mbytess=`grep "MCDRAM Memory bandwidth" result.likwid.HBM.CACHE.txt | tail -n 1 | cut -d '|' -f 3`
+hbm_gbytes=`grep "MCDRAM Memory data volume" result.likwid.HBM.CACHE.txt | tail -n 1 | cut -d '|' -f 3`
+ddr_mbytess=`grep "DDR Memory bandwidth" result.likwid.HBM.CACHE.txt | tail -n 1 | cut -d '|' -f 3`
+ddr_gbytes=`grep "DDR Memory data volume" result.likwid.HBM.CACHE.txt | tail -n 1 | cut -d '|' -f 3`
+runtime=`grep RDTSC result.likwid.HBM.CACHE.txt | tail -n 1 | cut -d '|' -f 6`
+hbm_gbytess=`python -c "print('{0:.3f}'.format($hbm_mbytess/1000))"`
+ddr_gbytess=`python -c "print('{0:.3f}'.format($ddr_mbytess/1000))"`
+#echo "Runtime: $runtime s"
+echo "MCDRAM Bytes: $hbm_gbytes"
+#echo "MCDRAM bandwidth: $hbm_gbytess GB/s"
+echo "DDR Bytes: $ddr_gbytes"
+#echo "DDR bandwidth: $ddr_gbytess GB/s"
+#echo 
+#BYTES - L2
+#echo "Run with -g L2"
+l2_mbytess=`grep "L2 bandwidth" result.likwid.L2.txt | tail -n 1 | cut -d '|' -f 3`
+l2_mbytes=`grep "L2 data volume" result.likwid.L2.txt | tail -n 1 | cut -d '|' -f 3` #Likwid wrongly reports MB in GB
+l2_gbytes=`python -c "print('{0:.3f}'.format($l2_mbytes/1000))"`
+runtime=`grep RDTSC result.likwid.L2.txt | tail -n 1 | cut -d '|' -f 6`
+l2_gbytess=`python -c "print('{0:.3f}'.format($l2_mbytess/1000))"`
+#echo "Runtime: $runtime s"
+echo "L2 Bytes: $l2_gbytes"
+#echo "L2 bandwidth: $l2_gbytess GB/s"
+#echo 
+#BYTES - L1
+#echo "Run with -g DATA (for L1 loads/stores uops)"
+uops_ld=`grep MEM_UOPS_RETIRED_ALL_LOADS result.likwid.DATA.txt | tail -n 1 | cut -d '|' -f 4`
+uops_st=`grep MEM_UOPS_RETIRED_ALL_STORES result.likwid.DATA.txt | tail -n 1 | cut -d '|' -f 4`
+runtime=`grep RDTSC result.likwid.DATA.txt | tail -n 1 | cut -d '|' -f 6`
+l1_gbytess=`python -c "print('{0:.3f}'.format(($uops_ld+$uops_st)/1000.0/1000/1000*64/$runtime))"`
+l1_gbytes=`python -c "print('{0:.3f}'.format(($uops_ld+$uops_st)/1000.0/1000/1000*64))"`
+#echo "Runtime: $runtime s"
+echo "L1 Bytes: $l1_gbytes"
+#echo "L1 bandwidth: $l1_gbytess GB/s"
+
+
+
+
